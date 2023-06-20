@@ -54,14 +54,6 @@ define({
 			container: '_primary'
 		},
 		{
-			id: '_additionalscripts',
-			type: 'inlinehtml',
-			label: ' ',
-			container: '_primary',
-			defaultvalue: `<script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>`,
-
-		},
-		{
 			id: '_resultsarea',
 			type: 'inlinehtml',
 			label: ' ',
@@ -656,27 +648,6 @@ function getResultHtml(c, startYear, startMonth, endYear, endMonth)
 	}
 	return resultHtml;
 
-}
-
-function createXls(data) {
-	// data = data.replace('<html>', '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">');
-	var base64EncodedString = encode.convert({
-		string: data,
-		inputEncoding: encode.Encoding.UTF_8,
-		outputEncoding: encode.Encoding.BASE_64
-	});
-	var fileObj = file.create({
-		name: "CDR",
-		fileType: file.Type.EXCEL,
-		contents: base64EncodedString,
-		encoding: file.Encoding.BASE_64,
-		folder: 365499
-	});
-	var fileId = fileObj.save();
-	log.debug("fileId", fileId)
-	//return this.setScript(fileId);
-	// return fileId;
-	return fileObj;
 }
 
 function getPeriodDataHtml(yearData, year)
