@@ -291,7 +291,7 @@ function(search, email, runtime, file, config) {
 
 
 		email.send({
-			author: 4487319,
+			author: runtime.getCurrentUser().id,
 			recipients: runtime.getCurrentUser().id,
 			subject : "Consumption Demand Report",
 			body : "Please see attached file. This report is based on the following date range filters:" + 
