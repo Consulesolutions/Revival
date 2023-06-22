@@ -11,7 +11,7 @@
  * @Date May 29, 2023
  * @Filename COS_CS_consumptionDemandReport.js
  */
-define(['N/ui/message', 'N/ui/dialog', 'N/currentRecord', 'N/https', './RD_LIB_consumptionDemandReport.js'],
+define(['N/ui/message', 'N/ui/dialog', 'N/currentRecord', 'N/https', './COS_LIB_consumptionDemandReport.js'],
 function(message, dialog, currentRecord, https, config){
     var functions = {};
     

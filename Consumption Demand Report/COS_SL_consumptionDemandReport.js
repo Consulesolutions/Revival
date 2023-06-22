@@ -81,9 +81,6 @@ function(ui, search, runtime, file, task, config) {
 	 * @param {https.serverRequest} req request object
 	 */
 	function defaultFormValues(form, req) {
-		var user = runtime.getCurrentUser();
-		var html = file.load({ id: config.reportForm.templateFile }).getContents() || ''; //billinggeneration_manpower.html
-		// var params = req.parameters.clients;
 		var defaultValues = {
 			_resultsarea: config.getResultsHeader()
 		};
@@ -197,13 +194,13 @@ function(ui, search, runtime, file, task, config) {
 	{
 		var mrTask = task.create({
 			taskType: task.TaskType.MAP_REDUCE,
-			scriptId: "customscript_rd_mr_cnsmptndmndrprt",
+			scriptId: "customscript_cos_mr_cnsmptndmndrprt",
 			params: {
 			}
 		});
 
 		var mrParams = decodedParams;
-		mrParams.savedSearchIds = [runtime.getCurrentScript().getParameter({name: 'custscript_rd_sl_itemshipoutreport3_s1'}), runtime.getCurrentScript().getParameter({name: 'custscript_rd_sl_itemshipoutreport3_s2'})];
+		mrParams.savedSearchIds = [runtime.getCurrentScript().getParameter({name: 'custscript_cos_sl_itemshipoutreport3_s1'}), runtime.getCurrentScript().getParameter({name: 'custscript_cos_sl_itemshipoutreport3_s2'})];
 		log.debug("mrParams from SL call", mrParams);
 		mrTask.params = {
 			'custscript_cos_mr_cdr_params': JSON.stringify(mrParams)
@@ -323,7 +320,7 @@ function(ui, search, runtime, file, task, config) {
 
 						group[attr].Fulfilled.val = Number(group[attr].Fulfilled.val) + Number(obj["Fulfilled"].val);
 					}
-					itemInfo.grandTotal += group[attr].Fulfilled.val
+					itemInfo.grandTotal += Number(obj["Fulfilled"].val)
 
 					return group;
 					},
@@ -374,7 +371,7 @@ function(ui, search, runtime, file, task, config) {
 
 	function getDataFromSearch1(context, decodedParams)
 	{
-		var searchId = runtime.getCurrentScript().getParameter({name: 'custscript_rd_sl_itemshipoutreport3_s1'});
+		var searchId = runtime.getCurrentScript().getParameter({name: 'custscript_cos_sl_itemshipoutreport3_s1'});
 		log.debug("getDataFromSearch1 searchId", searchId);
 		var dataFromSearch = [];
 		log.debug("searchId", searchId);
@@ -460,7 +457,7 @@ function(ui, search, runtime, file, task, config) {
 
 	function getDataFromSearch2(context, decodedParams)
 	{
-		var searchId = runtime.getCurrentScript().getParameter({name: 'custscript_rd_sl_itemshipoutreport3_s2'});
+		var searchId = runtime.getCurrentScript().getParameter({name: 'custscript_cos_sl_itemshipoutreport3_s2'});
 		log.debug("getDataFromSearch2 searchId", searchId);
 		var dataFromSearch = [];
 		try

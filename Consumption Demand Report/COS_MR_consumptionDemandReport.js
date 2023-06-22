@@ -21,7 +21,7 @@ function(search, email, runtime, file, config) {
 		{
 			return decodedParams.savedSearchIds;
 		}
-        return [runtime.getCurrentScript().getParameter({name: 'custscript_rd_sl_itemshipoutreport3_s1'}), runtime.getCurrentScript().getParameter({name: 'custscript_rd_sl_itemshipoutreport3_s2'})];
+        return [runtime.getCurrentScript().getParameter({name: 'custscript_cos_sl_itemshipoutreport3_s1'}), runtime.getCurrentScript().getParameter({name: 'custscript_cos_sl_itemshipoutreport3_s2'})];
     }
   
     function map(context) {
@@ -39,7 +39,7 @@ function(search, email, runtime, file, config) {
 			});
 
 			var newFilters = base_searchObj.filters;
-			if(searchId === runtime.getCurrentScript().getParameter({name: 'custscript_rd_sl_itemshipoutreport3_s1'}))
+			if(searchId === runtime.getCurrentScript().getParameter({name: 'custscript_cos_sl_itemshipoutreport3_s2'}))
 			{
 				if(decodedParams.param_dateFrom)
 				{
@@ -61,7 +61,8 @@ function(search, email, runtime, file, config) {
 				}
 			}
 			else
-			{if(decodedParams.param_dateFrom)
+			{
+				if(decodedParams.param_dateFrom)
 				{
 					newFilters.push(search.createFilter({
 						name : "trandate",
@@ -231,11 +232,6 @@ function(search, email, runtime, file, config) {
 		{
 			var itemInfo = {};
 			itemInfo.grandTotal = 0;
-			// itemInfo.comittedQty = res["Committed"].val;
-			// itemInfo.lastTranDate = res["Date"].val;
-			// itemInfo.onSoQty = res["ON SO"].val;
-			// itemInfo.onHandQty = res["On Hand"].val;
-			// itemInfo.onPoQty = res["On Order"].val;
 			var list = groupByIndividualItem[item] ? groupByIndividualItem[item] : [];
 		
 			// log.debug("summarize dataFromSearch3 item list", {item, list});
@@ -270,7 +266,7 @@ function(search, email, runtime, file, config) {
 						group[attr].Fulfilled.val = 0;
 						group[attr].Fulfilled.val = Number(group[attr].Fulfilled.val) + Number(obj["Fulfilled"].val);
 					}
-					itemInfo.grandTotal += group[attr].Fulfilled.val
+					itemInfo.grandTotal += Number(obj["Fulfilled"].val);
 	
 					return group;
 					},
@@ -312,71 +308,6 @@ function(search, email, runtime, file, config) {
 
 		return;
     }
-
-	
-
-	
-
-	
-
-	/**
-	 * not needed for CSV export
-	 * @param {*} context 
-	 * @param {*} decodedParams 
-	 * @returns 
-	 */
-	function getDataFromSearch3(context, decodedParams)
-	{
-		var searchId = "customsearch_rd_debug_cnsmptndmndrprt";
-		var dataFromSearch = [];
-		log.debug("searchId", searchId);
-		try
-		{
-			var base_searchObj = search.load({
-				id : searchId
-			});
-
-			var newFilters = base_searchObj.filters;
-			if(decodedParams.param_items && decodedParams.param_items.length > 0 && (decodedParams.param_items != undefined && decodedParams.param_items != "undefined"))
-			{
-				newFilters.push(search.createFilter({
-					name : "internalid",
-					operator : "anyof",
-					values : decodedParams.param_items.split(",")
-				}))
-			}
-
-			log.debug("getDataFromSearch3 newFilters", newFilters);
-			var searchObj = search.create({
-				type : base_searchObj.searchType,
-				filters : newFilters,
-				columns : base_searchObj.columns
-			})
-
-			log.debug("searchObj", searchObj);
-			var sr = getResults(searchObj.run());
-			log.debug("sr", sr);
-			if(sr && sr.length > 0)
-			{
-				for(var a = 0 ; a < sr.length ; a++)
-				{
-					var result = sr[a];
-					var sr_obj = {
-					};
-					searchObj.columns.forEach(function(col){
-						sr_obj[col.label] = {val:result.getValue(col), txt:result.getText(col)}
-					})
-					dataFromSearch.push(sr_obj);
-				}
-			}
-		}
-		catch(e)
-		{
-			log.error("ERROR in function getDataFromSearch3", e);
-		}
-		log.debug("getDataFromSearch3 dataFromSearch", dataFromSearch);
-		return dataFromSearch;
-	}
 
     var getResults = function getResults(set) {
 		var holder = [];

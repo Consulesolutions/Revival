@@ -13,9 +13,8 @@
 define({
 	
 	reportForm: {
-	templateFile : './RD_TMPLT_consumptionDemandReport.html',
 	clientScriptModulePath:
-		'./RD_CS_consumptionDemandReport.js',
+		'./COS_CS_consumptionDemandReport.js',
 	title: 'Consumption Demand Report',
 	fieldGroups: [
 		{
@@ -83,7 +82,7 @@ define({
 	},
 	getCsvResults : getCsvResults,
 	getResultsHeader : getResultsHeader,
-	getResultsHtml : getResultHtml,
+	getResultsHtml : getResultsHtml,
 });
 
 var showYearlyTotal = true;
@@ -431,7 +430,7 @@ function getResultsHeader(c){
 
 }
 
-function getResultHtml(c, startYear, startMonth, endYear, endMonth)
+function getResultsHtml(c, startYear, startMonth, endYear, endMonth)
 {
 	var resultHtml = "";
 	resultHtml += `
