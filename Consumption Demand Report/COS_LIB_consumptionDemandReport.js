@@ -120,7 +120,7 @@ function getCsvResults(fileObj, groupByIndividualItem, startYear, startMonth, en
 
 		for(var item in groupByIndividualItem){
 			var startYear_orig = startYear;
-			var loopingYear = new Date().getFullYear();
+			var loopingYear = endYear ? endYear : new Date().getFullYear(); //fixed for case 7/1/2021 - 6/30/2022 where headers are longer than contents
 			resultHtml += item + ",";
 			var resultHtml_appendLine = `="${item}",`;
 			
