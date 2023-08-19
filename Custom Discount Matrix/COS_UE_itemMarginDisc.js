@@ -2,6 +2,11 @@
  * @NApiVersion 2.1
  * @NScriptType UserEventScript
  * @NModuleScope Public
+ * @Author Rodmar Dimasaca
+ * @Email rod@consulesolutions.com
+ * @Project Revival Parts
+ * @Date 07 17, 2023
+ * @Filename COS_UE_itemMarginDisc.js
  */
 
 /**
@@ -14,15 +19,10 @@
  * Libraries            :   
  * 
  * Version              :   1.0.0 initial version
- *                          1.0.1
- *                          1.0.2 - do not run conditionally based on pricing baseprice vendor price is empty
- *                          1.0.3 - ignore multiplier for non assembly/kit
- *                          
+ *                          1.0.3 - do not run conditionally based on pricing baseprice vendor price is empty
+ *                          1.0.4 - set pricing discount percent body fields, simplify NON-ASSEMBLY/KIT margin, regardless if COST PLUS
  * 
- * Date                 :   07 17, 2023
- * Project              :   Revival Parts
- * Author               :   Rodmar Dimasaca
- * Email                : rod@consulesolutions.com
+ * 
  * Notes                :   
  * 
  * TODOs                :   
@@ -58,69 +58,76 @@ function(record, search, runtime, query, file, task) {
         }
         else
         {
-            var pricingType = getPricingType(recObj);
-            log.debug("pricingType", pricingType);
-            if(pricingType && pricingType.pricingTypeText == "Rival Pricing")
-            {
-                var rivalPrice1 = recObj.getValue({fieldId : "custitemcompetitorprice1"});
-                if(rivalPrice1 || rivalPrice1 === 0)
-                {
-                    var multiplier = getMultiplier(recObj) || 1;
-                    itemRec_basePrice = rivalPrice1 /* * multiplier */;
-                }
-            }
-            else if(pricingType && pricingType.pricingTypeText == "MAP")
-            {
-                itemRec_basePrice = recObj.getSublistValue({
-                    sublistId : "price",
-                    fieldId : "price_1_",
-                    line : "0"
-                });
-            }
-            else if(pricingType && pricingType.pricingTypeText == "Cost Plus")
-            {
-                var slsMult = getSlsMult(itemRec);
-                var purMult = getPurMult(itemRec);
-                var slsPur = slsMult / purMult;
-                var multiplier = getMultiplier(recObj) || 1;
-                var currRec_vendorPrice = getVendorPrice(recObj);
-                var workCost = currRec_vendorPrice / purMult;
-                workCost = workCost.toFixed(2);
-                // var workPrice = currRec_basePrice;
-                // if(type == "Cost Plus")
-                // {
-                //     workPrice = workCost * multiplier;
-                // }
-                itemRec_basePrice = workCost /* * multiplier */ * workCost;
-                itemRec_basePrice = itemRec_basePrice * slsPur;
-                itemRec_basePrice = roundUp(itemRec_basePrice);
-            }
-            else if(pricingType && pricingType.pricingTypeText == "Rival Pricing")
-            {
-                var rivalPrice1 = recObj.getValue({fieldId : "custitemcompetitorprice1"});
-                if(rivalPrice1 || rivalPrice1 === 0)
-                {
-                    var multiplier = getMultiplier(recObj) || 1;
-                    itemRec_basePrice = rivalPrice1 /* * multiplier */;
-                }
-            }
-            else if(pricingType && pricingType.pricingTypeText == "Manual")
-            {
-                itemRec_basePrice = recObj.getSublistValue({
-                    sublistId : "price",
-                    fieldId : "price_1_",
-                    line : "0"
-                });
-                itemRec_basePrice = itemRec_basePrice * slsPur;
-            }
-            else
-            {
-                itemRec_basePrice = recObj.getSublistValue({
-                    sublistId : "price",
-                    fieldId : "price_1_",
-                    line : "0"
-                });
-            }
+            //asked to just always use "base price - purchase price" 1 - (purchase price / base price), TODO: still use uom conversions?
+            itemRec_basePrice = recObj.getSublistValue({
+                sublistId : "price",
+                fieldId : "price_1_",
+                line : "0"
+            });
+
+            // var pricingType = getPricingType(recObj);
+            // log.debug("pricingType", pricingType);
+            // if(pricingType && pricingType.pricingTypeText == "Rival Pricing")
+            // {
+            //     var rivalPrice1 = recObj.getValue({fieldId : "custitemcompetitorprice1"});
+            //     if(rivalPrice1 || rivalPrice1 === 0)
+            //     {
+            //         var multiplier = getMultiplier(recObj) || 1;
+            //         itemRec_basePrice = rivalPrice1 /* * multiplier */;
+            //     }
+            // }
+            // else if(pricingType && pricingType.pricingTypeText == "MAP")
+            // {
+            //     itemRec_basePrice = recObj.getSublistValue({
+            //         sublistId : "price",
+            //         fieldId : "price_1_",
+            //         line : "0"
+            //     });
+            // }
+            // else if(pricingType && pricingType.pricingTypeText == "Cost Plus")
+            // {
+            //     var slsMult = getSlsMult(itemRec);
+            //     var purMult = getPurMult(itemRec);
+            //     var slsPur = slsMult / purMult;
+            //     var multiplier = getMultiplier(recObj) || 1;
+            //     var currRec_vendorPrice = getVendorPrice(recObj);
+            //     var workCost = currRec_vendorPrice / purMult;
+            //     workCost = workCost.toFixed(2);
+            //     // var workPrice = currRec_basePrice;
+            //     // if(type == "Cost Plus")
+            //     // {
+            //     //     workPrice = workCost * multiplier;
+            //     // }
+            //     itemRec_basePrice = workCost /* * multiplier */ * workCost;
+            //     itemRec_basePrice = itemRec_basePrice * slsPur;
+            //     itemRec_basePrice = roundUp(itemRec_basePrice);
+            // }
+            // else if(pricingType && pricingType.pricingTypeText == "Rival Pricing")
+            // {
+            //     var rivalPrice1 = recObj.getValue({fieldId : "custitemcompetitorprice1"});
+            //     if(rivalPrice1 || rivalPrice1 === 0)
+            //     {
+            //         var multiplier = getMultiplier(recObj) || 1;
+            //         itemRec_basePrice = rivalPrice1 /* * multiplier */;
+            //     }
+            // }
+            // else if(pricingType && pricingType.pricingTypeText == "Manual")
+            // {
+            //     itemRec_basePrice = recObj.getSublistValue({
+            //         sublistId : "price",
+            //         fieldId : "price_1_",
+            //         line : "0"
+            //     });
+            //     itemRec_basePrice = itemRec_basePrice * slsPur;
+            // }
+            // else
+            // {
+            //     itemRec_basePrice = recObj.getSublistValue({
+            //         sublistId : "price",
+            //         fieldId : "price_1_",
+            //         line : "0"
+            //     });
+            // }
             
             itemRec_basePrice = Number(itemRec_basePrice || 0); 
             itemRec_basePrice = itemRec_basePrice.toFixed(2);
@@ -197,7 +204,13 @@ function(record, search, runtime, query, file, task) {
 
     function computeMargin(itemRec, currRec_vendorPrice, currRec_basePrice)
     {
-        var pricingType = getPricingType(itemRec).pricingTypeText;
+        //applies to inventory items only - this is called by inventory items only anyway
+        //asked to just always use "base price - purchase price" 1 - (purchase price / base price), TODO: still use uom conversions?
+        //simplify the code, i realized it is doing conversions multiple times, one on adjustment cost and one on workcost
+        //but since we simplify it, it makes sense that conversion need to only apply 1 time, be it on the workcost
+        //thus var workCost = converted cost price and workPrice is straight baseprice
+
+        /* var pricingType = getPricingType(itemRec).pricingTypeText;
         var slsMult = getSlsMult(itemRec);
         var purMult = getPurMult(itemRec);
         var slsPur = slsMult / purMult;
@@ -205,17 +218,26 @@ function(record, search, runtime, query, file, task) {
         var workCost = (getVendorPrice(itemRec).toFixed(2)) / purMult; //toFixed2 copies excel behavior
         workCost = workCost.toFixed(2); //copy excel rounding - its formula, but lets keep this anyway
         var workPrice = currRec_basePrice;
-        if(pricingType == "Cost Plus")
-        {
-            // workPrice = workCost * slsPur * multiplier;
-            workPrice = workCost * slsPur;
-        }
+        // if(pricingType == "Cost Plus")
+        // {
+        //     // workPrice = workCost * slsPur * multiplier;
+        //     workPrice = workCost * slsPur;
+        // }
         workPrice = roundUp(workPrice);
         var adjCost = slsPur * workCost;
         // adjCost = adjCost.toFixed(2);
         
         // var newMargin = workCost ? (1 - (adjCost / workPrice)) * 100 : 100;
-        var newMargin = marginMainFormula(adjCost, workPrice)
+        
+        var newMargin = marginMainFormula(adjCost, workPrice) */
+
+        var slsMult = getSlsMult(itemRec);
+        var purMult = getPurMult(itemRec);
+        var slsPur = slsMult / purMult;
+        var workPrice = currRec_basePrice;
+        var workCost = (getVendorPrice(itemRec).toFixed(2)) / purMult; //toFixed2 copies excel behavior
+        workCost = workCost.toFixed(2); //copy excel rounding - its formula, but lets keep this anyway
+        var newMargin = marginMainFormula(workCost, workPrice)
         
         var oldMargin = itemRec.getValue({
             fieldId : "custitemmargin_percent"
@@ -223,7 +245,7 @@ function(record, search, runtime, query, file, task) {
         oldMargin = oldMargin !== "" && oldMargin !== null ? oldMargin.toFixed(2) : "";
 
         log.debug("newMargin", newMargin);
-        log.debug("LOOOG", {workPrice, workCost, currRec_vendorPrice, purMult, multiplier, adjCost, multiplier, slsPur, purMult, slsMult});
+        log.debug("LOOOG computeMargin", {workPrice, workCost, currRec_vendorPrice, purMult, slsPur, purMult, slsMult});
         var itemChange = false;
         if(oldMargin !== newMargin)
         {
@@ -236,7 +258,7 @@ function(record, search, runtime, query, file, task) {
         }
         log.debug("{oldMargin, newMargin}", {oldMargin, newMargin})
         
-        return {workPrice, workCost, currRec_vendorPrice, purMult, multiplier, adjCost, multiplier, slsPur, purMult, slsMult};
+        return {workPrice, workCost, currRec_vendorPrice, purMult, slsPur, purMult, slsMult};
         return itemChange;
     }
 
@@ -376,6 +398,14 @@ function(record, search, runtime, query, file, task) {
             ]
         });
 
+        var priceLevelId_fieldMapping = {
+            "4" : {fieldId : "custitemd2_discount"},
+            "3" : {fieldId : "custitemd1_discount"},
+            "8" : {fieldId : "custitemd5_discount"},
+            "6" : {fieldId : "custitemd3_discount"},
+            "7" : {fieldId : "custitemd4_discount"},
+        }
+
         discountMatrixSearch.run().each(function(res){
 
             log.debug("dcm res", res);
@@ -402,6 +432,15 @@ function(record, search, runtime, query, file, task) {
                 log.debug("{priceLevelId, discountRate, marginName}", {priceLevelId, discountRate, marginName, internalId})
     
                 discountRate = parseFloat(discountRate).toFixed(2);
+
+                log.debug("setting discountRate", {priceLevelId : priceLevelId, bodyField : priceLevelId_fieldMapping[""+priceLevelId].fieldId, discountRate : discountRate})
+                if(priceLevelId_fieldMapping[""+priceLevelId] && priceLevelId_fieldMapping[""+priceLevelId].fieldId)
+                {
+                    itemRec.setValue({
+                        fieldId : priceLevelId_fieldMapping[""+priceLevelId].fieldId,
+                        value : discountRate
+                    })
+                }
                 
                 // var computedNewDisc = itemRec_basePrice * discountRate / 100;
                 // var computedNewPrice = itemRec_basePrice - computedNewDisc;
@@ -567,8 +606,8 @@ function(record, search, runtime, query, file, task) {
                         type : scriptContext.newRecord.type,
                         id : scriptContext.newRecord.id
                     });
-
-                    var pricingType = getPricingType(recObj);
+                    // :[30865,18161,30866,18133,24944]} jess saunders testing with affected items
+                    var pricingType = getPricingType(currRec);
                     if(!pricingType.pricingTypeText)
                     {
                         return;
