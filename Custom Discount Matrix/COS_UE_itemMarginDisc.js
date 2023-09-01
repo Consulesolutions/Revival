@@ -20,7 +20,6 @@
  * 
  * Version              :   1.0.0 initial version
  *                          1.0.3 - do not run conditionally based on pricing baseprice vendor price is empty
- *                          1.0.4 - set pricing discount percent body fields, simplify NON-ASSEMBLY/KIT margin, regardless if COST PLUS
  * 
  * 
  * Notes                :   
@@ -39,6 +38,7 @@ function(record, search, runtime, query, file, task) {
     //test data
     //item id 33412 0% M1
     //item id 1812 30% M2
+	var targetFolder = 371839; //TODO handle for deploys
 
     function getBasePrice(recObj, componentPrices, respectBasePrice)
     {
@@ -137,17 +137,26 @@ function(record, search, runtime, query, file, task) {
 
     function getPricingType(recObj)
     {
-        var pricingTypeVal = recObj.getValue({
-            fieldId : "custitempricingtype"
-        })
-        var pricingTypeText = recObj.getText({
-            fieldId : "custitempricingtype"
-        })
-
-        if(pricingTypeVal)
-        {
-            return {pricingTypeVal, pricingTypeText}
+        try{
+            var pricingTypeVal = recObj.getValue({
+                fieldId : "custitempricingtype"
+            })
+            var pricingTypeText = recObj.getText({
+                fieldId : "custitempricingtype"
+            })
+    
+            if(pricingTypeVal)
+            {
+                return {pricingTypeVal, pricingTypeText}
+            }
+            return {};
         }
+        catch(e)
+        {
+            log.error("ERROR in function getPricingType", e)
+            return {};
+        }
+        
     }
 
     function getVendorPrice(recObj, componentPrices)
@@ -304,6 +313,7 @@ function(record, search, runtime, query, file, task) {
         var priceChange = false;
         var itemRec_basePrice = computeMarginObj ? computeMarginObj.workPrice || 0 : getBasePrice(itemRec);
         itemRec_basePrice = basePriceOption ? basePriceOption : itemRec_basePrice
+		itemRec_basePrice = roundUp(itemRec_basePrice)
         var targetMargin = itemRec.getValue({
             fieldId : "custitemmargin_percent"
         });
@@ -505,6 +515,13 @@ function(record, search, runtime, query, file, task) {
                 log.error("ERROR in function discountMatrixSearch.run", e)
             }
         })
+		
+		itemRec.setSublistValue({
+             sublistId : "price",
+             fieldId : "price_1_",
+             line : 0,
+             value : roundUp(itemRec_basePrice)
+        });
 
         return true;
 
@@ -580,8 +597,8 @@ function(record, search, runtime, query, file, task) {
         if(itemRec && (itemRec.type == "assemblyitem" || itemRec.type == "kititem"))
         {
             var newMargin = cost ? (1 - (cost / price)) * 100 : 100;
-            newMargin = newMargin.toFixed(); //like in excel
-            return newMargin;
+            //newMargin = newMargin.toFixed(); //like in excel
+            return Math.ceil(newMargin); //like in excel
             
         }
         else{
@@ -607,9 +624,52 @@ function(record, search, runtime, query, file, task) {
                         id : scriptContext.newRecord.id
                     });
                     // :[30865,18161,30866,18133,24944]} jess saunders testing with affected items
-                    var pricingType = getPricingType(currRec);
+                    // var pricingType = getPricingType(currRec);
+                    var pricingType = getPricingType(itemRec);
                     if(!pricingType.pricingTypeText)
                     {
+                        var fileIdRetVal = getFileId(); var fileId = fileIdRetVal.fileId; targetFolder = fileIdRetVal.folderId ? fileIdRetVal.folderId : targetFolder;
+                        var fileObj = getFileObj(fileId);
+                        var fileContents = getFileContent(fileObj);
+                        var updatedItemRecId = scriptContext.newRecord.id;
+                        if(fileObj && fileContents)
+                        {
+                            fileContents = fileContents.filter(function(elem){
+                                // log.debug("{elem, updatedItemRecId}", {elem, updatedItemRecId})
+                                if(elem == updatedItemRecId)
+                                {
+                                    return false;
+                                }
+                                else{
+                                    return true;
+                                }
+                            });
+                            log.debug("fileContents without updatedItemRecId skip", {updatedItemRecId, fileContentsLength : fileContents.length, fileContents})
+
+                            file.delete({
+                                id : fileId
+                            })
+                            var newFileObj = file.create({
+                                folder : targetFolder,
+                                fileType : file.Type.PLAINTEXT,
+                                name : "DISCOUNTMATRIX_ASSEMBLYKITS_TOUPDATE",
+                                contents : JSON.stringify([...new Set(fileContents)])
+                            })
+                            var newfileId = newFileObj.save();
+                            log.debug("newfileId modified-saved", newfileId)
+                        }
+                        else
+                        {
+                            var newFileObj = file.create({
+                                folder : targetFolder,
+                                fileType : file.Type.PLAINTEXT,
+                                name : "DISCOUNTMATRIX_ASSEMBLYKITS_TOUPDATE",
+                                contents : JSON.stringify([updatedItemRecId])
+                            })
+                            var newfileId = newFileObj.save();
+                            log.debug("newfileId missing-saved", newfileId)
+                        }
+                        log.debug("skipping updatedItemRecId", updatedItemRecId)
                         return;
                     }
 
@@ -641,7 +701,7 @@ function(record, search, runtime, query, file, task) {
                     }
 
 
-                    var fileId = getFileId();
+                    var fileIdRetVal = getFileId(); var fileId = fileIdRetVal.fileId; targetFolder = fileIdRetVal.folderId ? fileIdRetVal.folderId : targetFolder;
                     var fileObj = getFileObj(fileId);
                     var fileContents = getFileContent(fileObj);
 
@@ -663,7 +723,7 @@ function(record, search, runtime, query, file, task) {
                             id : fileId
                         })
                         var newFileObj = file.create({
-                            folder : 371738,
+                            folder : targetFolder,
                             fileType : file.Type.PLAINTEXT,
                             name : "DISCOUNTMATRIX_ASSEMBLYKITS_TOUPDATE",
                             contents : JSON.stringify([...new Set(fileContents)])
@@ -674,7 +734,7 @@ function(record, search, runtime, query, file, task) {
                     else
                     {
                         var newFileObj = file.create({
-                            folder : 371738,
+                            folder : targetFolder,
                             fileType : file.Type.PLAINTEXT,
                             name : "DISCOUNTMATRIX_ASSEMBLYKITS_TOUPDATE",
                             contents : JSON.stringify([...new Set(fileContents)])
@@ -685,7 +745,21 @@ function(record, search, runtime, query, file, task) {
                 }
                 else
                 {
-                    var pricingType = getPricingType(currRec);
+                    // var newFileObj = file.create({
+                    //     folder : targetFolder,
+                    //     fileType : file.Type.PLAINTEXT,
+                    //     name : "TESTFILE",
+                    //     contents : 'test'
+                    // })
+                    // var newfileId = newFileObj.save();
+                    // log.debug("newfileId test missing-saved", newfileId)
+                    var itemRec = record.load({
+                        type : scriptContext.newRecord.type,
+                        id : scriptContext.newRecord.id
+                    });
+
+                    // var pricingType = getPricingType(currRec);
+                    var pricingType = getPricingType(itemRec);
                     
                     var updatedItemRecId = currRec.id;
                     var currRec_basePrice = getBasePrice(currRec, null, true);
@@ -694,17 +768,8 @@ function(record, search, runtime, query, file, task) {
                     if((currRec_basePrice || currRec_basePrice === 0) && (currRec_vendorPrice || currRec_vendorPrice === 0) && pricingType.pricingTypeVal)
                     {
                         //compute margin
-                        var itemRec = record.load({
-                            type : scriptContext.newRecord.type,
-                            id : scriptContext.newRecord.id
-                        });
+                        
 
-                        itemRec.setSublistValue({
-                            sublistId : "price",
-                            fieldId : "price_1_",
-                            line : 1,
-                            value : currRec_basePrice
-                        });
 
                         log.debug("before computing margin")
                         var computeMarginObj = computeMargin(itemRec, currRec_vendorPrice, currRec_basePrice);
@@ -724,7 +789,7 @@ function(record, search, runtime, query, file, task) {
 
                     var processedItemAssemblyIds = [];
                     //move to library
-                    var fileId = getFileId();
+                    var fileIdRetVal = getFileId(); var fileId = fileIdRetVal.fileId; targetFolder = fileIdRetVal.folderId ? fileIdRetVal.folderId : targetFolder;
                     var fileObj = getFileObj(fileId);
                     var fileContents = getFileContent(fileObj);
 
@@ -778,7 +843,7 @@ function(record, search, runtime, query, file, task) {
                             id : fileId
                         })
                         var newFileObj = file.create({
-                            folder : 371738,
+                            folder : targetFolder,
                             fileType : file.Type.PLAINTEXT,
                             name : "DISCOUNTMATRIX_ASSEMBLYKITS_TOUPDATE",
                             contents : JSON.stringify([...new Set(fileContents)])
@@ -789,7 +854,7 @@ function(record, search, runtime, query, file, task) {
                     else
                     {
                         var newFileObj = file.create({
-                            folder : 371738,
+                            folder : targetFolder,
                             fileType : file.Type.PLAINTEXT,
                             name : "DISCOUNTMATRIX_ASSEMBLYKITS_TOUPDATE",
                             contents : JSON.stringify([...new Set(processedItemAssemblyIds)])
@@ -862,6 +927,7 @@ function(record, search, runtime, query, file, task) {
 	{
 		var retVal = {};
 		var fileId = "";
+		var folderId = "";
 		var fileSearchObj = search.create({
 			type: "file",
 			filters:
@@ -880,10 +946,12 @@ function(record, search, runtime, query, file, task) {
 		});
 
 		fileSearchObj.run().each(function(res){
-			fileId = res.id
+			fileId = res.id;
+            folderId = res.getValue({name: "folder", label: "Folder"});
 		})
-
-		return fileId;
+        retVal.fileId = fileId
+        retVal.folderId = folderId
+		return retVal;
 
 		
 	}
